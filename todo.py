@@ -1,5 +1,4 @@
-
-!#/usr/bin/env python3
+#!/usr/bin/env python3
 
 import psycopg2
 import time
@@ -53,6 +52,7 @@ def create_todo(year, month, day, hour, minute, **kwargs):
 def update_todo(todo_id):
     pass
 
+
 def get_todos():
     curr = conn.cursor()
     try:
@@ -71,11 +71,39 @@ def get_todos():
 
 
 def get_complete_todos():
-    pass
+    curr = conn.cursor()
+    try:
+        sql = 'SELECT * FROM todo WHERE complete = true'
+        curr.execute(sql)
+        row = curr.fetchone()
+
+        while row is not None:
+            todo_id, title, content, is_complete, due = row
+            due_date = time.ctime(due)
+            complete = 'complete' if is_complete else 'incomplete'
+            print(todo_id, title, content, complete, due_date)
+            row = curr.fetchone()
+    except Exception as e:
+        print('Error', e)
+    curr.close()
 
 
 def get_not_complete_todos():
-    pass
+    curr = conn.cursor()
+    try:
+        sql = 'SELECT * FROM todo WHERE complete = false'
+        curr.execute(sql)
+        row = curr.fetchone()
+
+        while row is not None:
+            todo_id, title, content, is_complete, due = row
+            due_date = time.ctime(due)
+            complete = 'complete' if is_complete else 'incomplete'
+            print(todo_id, title, content, complete, due_date)
+            row = curr.fetchone()
+    except Exception as e:
+        print('Error', e)
+    curr.close()
 
 
 def delete_todo(todo_id):
@@ -98,10 +126,13 @@ def main():
     if conn is None:
         conn = connect()
 
+    view_option = False
     while True:
-        get_todos()
+        if not view_option:
+            get_todos()
+        view_option = False
         print('------------------------------')
-        action = input('1. Create\n2. Delete\n3. Update\n')
+        action = input('1. Create\n2. Delete\n3. Options\n')
         try:
             action = int(action)
         except Exception:
@@ -121,10 +152,25 @@ def main():
             todo_id = int(input('id: '))
             delete_todo(todo_id)
         elif action == 3:
-            pass
+            view_action = input('1. Get Complete\n2. Get Incomplete\n3. Mark Complete\n4. Back\n')
+            view_option = True
+            try:
+                view_action = int(view_action)
+            except Exception:
+                print('Invalid Argument')
+            if view_action == 1:
+                get_complete_todos()
+            elif view_action == 2:
+                get_not_complete_todos()
+            elif view_action == 3:
+                mark_complete()
+            elif view_action == 4:
+                pass
+            else:
+                print('Invalid Argument')
+
         else:
             print('Invalid Argument')
-
 
 
 if __name__ == '__main__':
