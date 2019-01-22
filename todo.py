@@ -21,14 +21,10 @@ class Todo(object):
         due = datetime(year, month, day, hour, minute)
         self.due = time.mktime(due.timetuple())
 
-    def __str__(self):
-        return f'{self.title} {self.content} {self.due}'
-
-
 def connect():
     global conn
     try:
-        conn = psycopg2.connect(f'dbname=todos user=postgres password={PASSWORD}')
+        conn = psycopg2.connect('dbname=todos user=postgres password={}'.format(PASSWORD))
         cur = conn.cursor()
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
@@ -102,7 +98,6 @@ def get_not_complete_todos():
             todo_id, title, content, is_complete, due = row
             due_date = time.ctime(due)
             complete = 'complete' if is_complete else 'incomplete'
-            # TODO: Make this format pretty
             print(todo_id, title, content, complete, due_date)
             row = curr.fetchone()
     except Exception as e:
@@ -124,7 +119,7 @@ def delete_todo(todo_id):
 def mark_complete(todo_id):
     curr = conn.cursor()
     try:
-        curr.execute(sql.SQL(f'update todo set complete = true where id = {todo_id}'))
+        curr.execute(sql.SQL('update todo set complete = true where id = {}'.format(todo_id)))
         conn.commit()
         print('marked todo complete')
     except Exception as e:
