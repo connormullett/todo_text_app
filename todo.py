@@ -81,8 +81,11 @@ def get_complete_todos():
             todo_id, title, content, is_complete, due = row
             due_date = time.ctime(due)
             complete = 'complete' if is_complete else 'incomplete'
+            # TODO: Make this format pretty
             print(todo_id, title, content, complete, due_date)
             row = curr.fetchone()
+        if row is None:
+            print('No todos marked complete')
     except Exception as e:
         print('Error', e)
     curr.close()
@@ -99,6 +102,7 @@ def get_not_complete_todos():
             todo_id, title, content, is_complete, due = row
             due_date = time.ctime(due)
             complete = 'complete' if is_complete else 'incomplete'
+            # TODO: Make this format pretty
             print(todo_id, title, content, complete, due_date)
             row = curr.fetchone()
     except Exception as e:
@@ -117,9 +121,15 @@ def delete_todo(todo_id):
     curr.close()
 
 
-def mark_complete(**kwargs):
-    pass
-
+def mark_complete(todo_id):
+    curr = conn.cursor()
+    try:
+        curr.execute(sql.SQL(f'update todo set complete = true where id = {todo_id}'))
+        conn.commit()
+        print('marked todo complete')
+    except Exception as e:
+        print('No todo found for ID')
+    curr.close()
 
 def main():
     global conn
@@ -129,6 +139,7 @@ def main():
     view_option = False
     while True:
         if not view_option:
+            print('------------------------------')
             get_todos()
         view_option = False
         print('------------------------------')
@@ -163,7 +174,8 @@ def main():
             elif view_action == 2:
                 get_not_complete_todos()
             elif view_action == 3:
-                mark_complete()
+                todo_id = input('Enter todo id: ')
+                mark_complete(todo_id)
             elif view_action == 4:
                 pass
             else:
