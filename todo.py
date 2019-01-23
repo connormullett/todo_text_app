@@ -129,7 +129,7 @@ def mark_complete(todo_id):
     curr = conn.cursor()
     try:
         curr.execute(sql.SQL('update todo set complete = true' +
-                             'where id = {}'.format(todo_id)))
+                             ' where id = {}'.format(todo_id)))
         conn.commit()
         print('marked todo complete')
     except Exception:
@@ -140,12 +140,14 @@ def mark_complete(todo_id):
 def todo_detail(todo_id):
     curr = conn.cursor()
     try:
-        curr.execute(sql.SQL('SELECT FROM todo WHERE id = {}'
+        curr.execute(sql.SQL('select * from todo where id = {}'
                              .format(todo_id)))
         row = curr.fetchone()
-        for item in row:
-            print(item)
-
+        todo_id, title, content, is_complete, due_date = row
+        complete = 'complete' if is_complete else 'incomplete'
+        due = time.ctime(due_date)
+        print('{}\n{}\n{}\n{}\n{}'.format(todo_id, title, content,
+              complete, due))
     except Exception:
         print('No entry for ID', todo_id)
 
@@ -157,9 +159,9 @@ def main():
 
     while True:
         os.system('clear')
-        puts(colored.cyan('==================='))
+        puts(colored.cyan('========= TODOS ========'))
         get_todos()
-        puts(colored.cyan('==================='))
+        puts(colored.cyan('========================'))
         action = input('1. Create\n2. Delete\n3. Options\n4. Exit\n')
         try:
             action = int(action)
@@ -187,6 +189,9 @@ def main():
             delete_todo(todo_id)
         elif action == 3:
             os.system('clear')
+            puts(colored.cyan('========= TODOS ========'))
+            get_todos()
+            puts(colored.cyan('========================'))
             puts(colored.cyan('--- OPTIONS ---'))
             view_action = input('1. Get Complete\n2. Get Incomplete' +
                                 '\n3. View Details\n4. Mark Complete' +
