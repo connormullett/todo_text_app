@@ -55,18 +55,32 @@ def create_todo(year, month, day, hour, minute, **kwargs):
         conn.rollback()
 
 
+def filter_rows(rows):
+    for row in rows:
+        todo_id, title, content, is_complete, due = row
+        due_date = time.ctime(due)
+        complete = 'complete' if is_complete else 'incomplete'
+        print('{}\t{}\t{}\t{}\t{}'.format(todo_id, title, content,
+              complete, due_date))
+
+
+def get_rows(curr):
+    rows = []
+    row = curr.fetchone()
+    if row is None:
+        print('No todos')
+    while row is not None:
+        rows.append(row)
+        row = curr.fetchone()
+    filter_rows(rows)
+
+
 def get_todos():
     curr = conn.cursor()
     try:
         sql = '''SELECT * FROM todo'''
         curr.execute(sql)
-        row = curr.fetchone()
-        while row is not None:
-            todo_id, title, content, is_complete, due = row
-            due_date = time.ctime(due)
-            complete = 'complete' if is_complete else 'incomplete'
-            print(todo_id, title, content, complete, due_date)
-            row = curr.fetchone()
+        get_rows(curr)
     except Exception as e:
         print('Error: ', e)
     curr.close()
@@ -77,20 +91,12 @@ def get_complete_todos():
     try:
         sql = 'SELECT * FROM todo WHERE complete = true'
         curr.execute(sql)
-        row = curr.fetchone()
-
-        if row is None:
-            return puts(colored.blue('NO TODOS COMPLETE'))
-
-        while row is not None:
-            todo_id, title, content, is_complete, due = row
-            due_date = time.ctime(due)
-            complete = 'complete' if is_complete else 'incomplete'
-            # TODO: Make this format pretty
-            print(todo_id, title, content, complete, due_date)
-            row = curr.fetchone()
+        get_rows(curr)
     except Exception as e:
         print('Error', e)
+        print('Rolling back transaction')
+        conn.rollback()
+
     curr.close()
 
 
@@ -99,14 +105,7 @@ def get_not_complete_todos():
     try:
         sql = 'SELECT * FROM todo WHERE complete = false'
         curr.execute(sql)
-        row = curr.fetchone()
-
-        while row is not None:
-            todo_id, title, content, is_complete, due = row
-            due_date = time.ctime(due)
-            complete = 'complete' if is_complete else 'incomplete'
-            print(todo_id, title, content, complete, due_date)
-            row = curr.fetchone()
+        get_rows(curr)
     except Exception as e:
         print('Error', e)
         print('Rolling back transaction')
@@ -123,10 +122,6 @@ def delete_todo(todo_id):
         print('todo deleted')
     except Exception:
         print('No todo found for ID')
-    except psycopg2.DatabaseError as error:
-        print('Error: ', error)
-        print('Rolling back transaction')
-        conn.rollback()
     curr.close()
 
 
