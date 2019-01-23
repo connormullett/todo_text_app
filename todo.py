@@ -60,7 +60,7 @@ def filter_rows(rows):
         todo_id, title, content, is_complete, due = row
         due_date = time.ctime(due)
         complete = 'complete' if is_complete else 'incomplete'
-        print('{}\t{}\t{}\t{}\t{}'.format(todo_id, title, content,
+        print('{}\t{}\t{}\t{}\t{}'.format(todo_id, title, content[:20],
               complete, due_date))
 
 
@@ -137,6 +137,19 @@ def mark_complete(todo_id):
     curr.close()
 
 
+def todo_detail(todo_id):
+    curr = conn.cursor()
+    try:
+        curr.execute(sql.SQL('SELECT FROM todo WHERE id = {}'
+                             .format(todo_id)))
+        row = curr.fetchone()
+        for item in row:
+            print(item)
+
+    except Exception:
+        print('No entry for ID', todo_id)
+
+
 def main():
     global conn
     if conn is None:
@@ -176,7 +189,8 @@ def main():
             os.system('clear')
             puts(colored.cyan('--- OPTIONS ---'))
             view_action = input('1. Get Complete\n2. Get Incomplete' +
-                                '\n3. Mark Complete\n4. Back\n')
+                                '\n3. View Details\n4. Mark Complete' +
+                                '\n5. Back\n')
             try:
                 view_action = int(view_action)
             except Exception:
@@ -189,8 +203,11 @@ def main():
                 get_not_complete_todos()
             elif view_action == 3:
                 todo_id = input('Enter todo id: ')
-                mark_complete(todo_id)
+                todo_detail(todo_id)
             elif view_action == 4:
+                todo_id = input('Enter todo id: ')
+                mark_complete(todo_id)
+            elif view_action == 5:
                 continue
             else:
                 print('Invalid Argument')
