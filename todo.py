@@ -38,6 +38,19 @@ def connect():
             return conn
 
 
+def print_todo(row):
+    todo_id, title, content, is_complete, due_date = row
+    due = time.ctime(due_date)
+    complete = 'complete' if is_complete else 'incomplete'
+    content = content[:20]
+    if is_complete:
+        puts(colored.green(f'{todo_id}\t{title}\t{content}' +
+                           f'\t{complete}\t{due}'))
+    else:
+        puts(colored.red(f'{todo_id}\t{title}\t{content}' +
+                         f'\t{complete}\t{due}'))
+
+
 def create_todo(year, month, day, hour, minute, **kwargs):
     try:
         todo = Todo(year, month, day, hour, minute, **kwargs)
@@ -48,7 +61,7 @@ def create_todo(year, month, day, hour, minute, **kwargs):
 
         conn.commit()
         cur.close()
-        print('todo added')
+        puts(colored.green('todo added'))
     except (Exception, psycopg2.DatabaseError) as error:
         print('Error: ', error)
         print('Rolling back transaction')
@@ -57,11 +70,7 @@ def create_todo(year, month, day, hour, minute, **kwargs):
 
 def filter_rows(rows):
     for row in rows:
-        todo_id, title, content, is_complete, due = row
-        due_date = time.ctime(due)
-        complete = 'complete' if is_complete else 'incomplete'
-        print('{}\t{}\t{}\t{}\t{}'.format(todo_id, title, content[:20],
-              complete, due_date))
+        print_todo(row)
 
 
 def get_rows(curr):
@@ -137,8 +146,21 @@ def mark_complete(todo_id):
     curr.close()
 
 
+def unmark_complete(todo_id):
+    curr = conn.cursor()
+    try:
+        curr.execute(sql.SQL('update todo set complete = false' +
+                             ' where id = {}'.format(todo_id)))
+        conn.commit()
+        print('marked todo incomplete')
+    except Exception:
+        print('no todo found')
+    curr.close()
+
+
 def todo_detail(todo_id):
     curr = conn.cursor()
+    os.system('clear')
     try:
         curr.execute(sql.SQL('select * from todo where id = {}'
                              .format(todo_id)))
@@ -150,6 +172,24 @@ def todo_detail(todo_id):
               complete, due))
     except Exception:
         print('No entry for ID', todo_id)
+
+
+def get_snippets():
+    curr = conn.cursor()
+    try:
+        curr.execute(sql.SQL('SELECT * FROM todo'))
+        row = curr.fetchone()
+        snippets = []
+        while row is not None:
+            todo_id, title, content, complete, due = row
+            snippets.append((todo_id, title))
+            row = curr.fetchone()
+        for s in snippets:
+            print('{}\t{}'.format(s[0], s[1]))
+        print()
+    except Exception as e:
+        print('Error', e)
+        conn.rollback()
 
 
 def main():
@@ -184,6 +224,7 @@ def main():
                         content=content, complete=False)
         elif action == 2:
             os.system('clear')
+            get_snippets()
             puts(colored.cyan('--- DELETE ---'))
             todo_id = int(input('id: '))
             delete_todo(todo_id)
@@ -195,24 +236,29 @@ def main():
             puts(colored.cyan('--- OPTIONS ---'))
             view_action = input('1. Get Complete\n2. Get Incomplete' +
                                 '\n3. View Details\n4. Mark Complete' +
-                                '\n5. Back\n')
+                                '\n5. Mark Incomplete\n6. Back\n')
             try:
                 view_action = int(view_action)
             except Exception:
                 puts(colored.red('INVALID ARGUMENT'))
                 puts(colored.red(input('press any key to continue ... ')))
             os.system('clear')
+
+            if view_action >= 3 and not view_action == 6:
+                get_snippets()
+                todo_id = input('Enter todo id: ')
+
             if view_action == 1:
                 get_complete_todos()
             elif view_action == 2:
                 get_not_complete_todos()
             elif view_action == 3:
-                todo_id = input('Enter todo id: ')
                 todo_detail(todo_id)
             elif view_action == 4:
-                todo_id = input('Enter todo id: ')
                 mark_complete(todo_id)
             elif view_action == 5:
+                unmark_complete(todo_id)
+            elif view_action == 6:
                 continue
             else:
                 print('Invalid Argument')
@@ -227,4 +273,3 @@ def main():
 if __name__ == '__main__':
     main()
 
-conn.rollback()
